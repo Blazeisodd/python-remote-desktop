@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Remote Control</title>
+<script src="https://cdn.socket.io/4.7.3/socket.io.min.js"></script>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0d1117;color:#c9d1d9;font-family:system-ui;overflow:hidden}.header{background:#161b22;padding:15px 20px;border-bottom:1px solid #30363d;display:flex;justify-content:space-between;align-items:center}h1{color:#58a6ff;font-size:20px}#status{padding:8px 16px;background:#21262d;border-radius:6px;font-size:14px}.connected{background:#3fb950!important}.controls{padding:10px 20px;background:#161b22;border-bottom:1px solid #30363d;display:flex;gap:10px}button{background:#238636;color:#fff;border:1px solid #2ea043;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:14px}button:hover{background:#2ea043}button:disabled{background:#21262d;color:#8b949e;cursor:not-allowed}.screen-container{display:flex;justify-content:center;align-items:center;height:calc(100vh - 120px);padding:20px}#remoteScreen{max-width:100%;max-height:100%;border:2px solid #30363d;border-radius:8px;cursor:crosshair}</style></head><body>
+<div class="header"><h1>🖥️ Remote Desktop</h1><div id="status">Connecting...</div></div>
+<div class="controls"><button id="connectBtn">Start Control</button><button id="streamBtn" disabled>Start Stream</button><button id="disconnectBtn" disabled>Disconnect</button></div>
+<div class="screen-container"><img id="remoteScreen" alt="Remote Screen"></div>
+<script>
+const socket=io();const statusDiv=document.getElementById('status');const connectBtn=document.getElementById('connectBtn');const streamBtn=document.getElementById('streamBtn');const disconnectBtn=document.getElementById('disconnectBtn');const remoteScreen=document.getElementById('remoteScreen');let controlling=false;let streaming=false;let screenWidth=1920;let screenHeight=1080;
+socket.on('connect',()=>{statusDiv.textContent='Connected';statusDiv.classList.add('connected');connectBtn.disabled=false;streamBtn.disabled=false});
+socket.on('agent_ready',(data)=>{screenWidth=data.screen_width;screenHeight=data.screen_height;statusDiv.textContent='Agent Ready - '+screenWidth+'x'+screenHeight});
+socket.on('disconnect',()=>{statusDiv.textContent='Disconnected';statusDiv.classList.remove('connected');controlling=false;streaming=false});
+socket.on('screenshot',(data)=>{remoteScreen.src='data:image/jpeg;base64,'+data.image});
+connectBtn.addEventListener('click',()=>{controlling=true;connectBtn.disabled=true;disconnectBtn.disabled=false;socket.emit('request_screenshot')});
+streamBtn.addEventListener('click',()=>{if(!streaming){streaming=true;streamBtn.textContent='Stop Stream';socket.emit('start_streaming')}else{streaming=false;streamBtn.textContent='Start Stream';location.reload()}});
+disconnectBtn.addEventListener('click',()=>{controlling=false;streaming=false;connectBtn.disabled=false;disconnectBtn.disabled=true;statusDiv.textContent='Paused'});
+remoteScreen.addEventListener('mousemove',(e)=>{if(!controlling)return;const rect=remoteScreen.getBoundingClientRect();const scaleX=screenWidth/rect.width;const scaleY=screenHeight/rect.height;const x=Math.floor((e.clientX-rect.left)*scaleX);const y=Math.floor((e.clientY-rect.top)*scaleY);socket.emit('mouse_move',{x,y})});
+remoteScreen.addEventListener('click',(e)=>{if(!controlling)return;e.preventDefault();socket.emit('mouse_click',{button:'left',clicks:1})});
+remoteScreen.addEventListener('contextmenu',(e)=>{if(!controlling)return;e.preventDefault();socket.emit('mouse_click',{button:'right',clicks:1})});
+document.addEventListener('keydown',(e)=>{if(!controlling)return;if(e.key==='F12')return;e.preventDefault();if(e.key.length===1&&!e.ctrlKey&&!e.altKey){socket.emit('type_text',{text:e.key})}else{const keyMap={'Enter':'enter','Backspace':'backspace','Tab':'tab','Escape':'esc','ArrowUp':'up','ArrowDown':'down','ArrowLeft':'left','ArrowRight':'right',' ':'space'};const key=keyMap[e.key]||e.key.toLowerCase();socket.emit('key_press',{key})}});
+</script></body></html>
