@@ -32,7 +32,7 @@ Go to `http://YOUR_IP:5000`
 ### For the Remote Computer (THEM):
 
 **Option A: Run Python directly**
-1. Edit `agent.py` line 8:
+1. Edit `agent.py` line 11:
    - Change `SERVER_URL = 'http://YOUR_IP_HERE:5000'`
    - Put YOUR IP address there
 2. Install requirements: `pip install -r requirements.txt`
@@ -40,7 +40,7 @@ Go to `http://YOUR_IP:5000`
 
 **Option B: Create single .EXE file (Recommended!)**
 
-1. Edit `agent.py` first (put your IP on line 8)
+1. Edit `agent.py` first (put your IP on line 11)
 2. Install PyInstaller:
 ```bash
 pip install pyinstaller
